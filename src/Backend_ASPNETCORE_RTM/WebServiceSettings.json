@@ -1,0 +1,8 @@
+﻿{
+
+  "CreateProfile": "https://api.projectoxford.ai/spid/v1.0/verificationProfiles",
+  "GetAllProfile": "https://api.projectoxford.ai/spid/v1.0/verificationProfiles",
+  "SubsKey": "3e4bf8399ade45009879bcfab492efc4",
+  "Locale" :  "en-us"
+
+}
