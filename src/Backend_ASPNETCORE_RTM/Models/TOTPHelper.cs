@@ -80,23 +80,23 @@ namespace Backend_ASPNETCORE_RTM.Models
             }
             return success;
         }
-        public bool CheckCode(string upn, string code)
+        public bool CheckCode(string internalID, string code)
         {
-            string secretKey = GetSecretKey(upn);
-            return CheckCode(secretKey, code, upn, DateTime.Now);
+            string secretKey = GetSecretKey(internalID);
+            return CheckCode(secretKey, code, internalID, DateTime.Now);
         }
-        private bool CheckCode(string secretKey, string code, string upn, DateTime when)
+        private bool CheckCode(string secretKey, string code, string internalID, DateTime when)
         {
             long currentInterval = GetInterval(when);
             bool success = false;
             for(long timeIndex = currentInterval - pastIntervals; timeIndex <= currentInterval + futureIntervals; timeIndex++)
             {
                 string intervalCode = GetCode(secretKey, timeIndex);
-                bool intervalCodeHasBeenUsed = CodeIsUsed(upn, timeIndex);
+                bool intervalCodeHasBeenUsed = CodeIsUsed(internalID, timeIndex);
                 if(!intervalCodeHasBeenUsed && ConstantTimeEquals(intervalCode, code))
                 {
                     success = true;
-                    SetUsedCode(upn, timeIndex);
+                    SetUsedCode(internalID, timeIndex);
                     break;
                 }
             }
@@ -119,11 +119,11 @@ namespace Backend_ASPNETCORE_RTM.Models
             return diff == 0;
         }
 
-        public string GetSecretKey(string upn)
+        public string GetSecretKey(string internalID)
         {
             string result = null;
             var sk = from s in _dbContext.Secrets
-                     where s.internalID.Equals(Guid.Parse(upn))
+                     where s.internalID.Equals(Guid.Parse(internalID))
                      select s;
 
             if (sk.Count() > 0)
@@ -143,10 +143,10 @@ namespace Backend_ASPNETCORE_RTM.Models
             return result;
         }
 
-        public void SetSecretKey(string upn, string secret)
+        public void SetSecretKey(string internalID, string secret)
         {
             SecretsModel s = new SecretsModel();
-            s.internalID = Guid.Parse(upn);
+            s.internalID = Guid.Parse(internalID);
             s.secret = secret;
             _dbContext.Add<SecretsModel>(s);
             _dbContext.SaveChangesAsync();
@@ -161,12 +161,12 @@ namespace Backend_ASPNETCORE_RTM.Models
             //}
         }
 
-        private bool CodeIsUsed(string upn, long interval)
+        private bool CodeIsUsed(string internalID, long interval)
         {
             bool result = false;
 
             var code = from c in _dbContext.UsedCodes
-                       where c.internalID.Equals(Guid.Parse(upn)) && c.interval.Equals(interval)
+                       where c.internalID.Equals(Guid.Parse(internalID)) && c.interval.Equals(interval)
                        select c;
 
             if (code.Count() > 0)
@@ -177,7 +177,7 @@ namespace Backend_ASPNETCORE_RTM.Models
             // House Keeping
 
             var oldCodes = from c in _dbContext.UsedCodes
-                   where c.internalID.Equals(Guid.Parse(upn)) && (c.interval < (interval))
+                   where c.internalID.Equals(Guid.Parse(internalID)) && (c.interval < (interval))
                    select c;
 
             foreach (var c in oldCodes)
@@ -206,10 +206,10 @@ namespace Backend_ASPNETCORE_RTM.Models
             return result;
         }
 
-        private void SetUsedCode(string upn, long interval)
+        private void SetUsedCode(string internalID, long interval)
         {
             UsedCodesModel c = new UsedCodesModel();
-            c.internalID = Guid.Parse(upn);
+            c.internalID = Guid.Parse(internalID);
             c.interval = interval;
             _dbContext.Add<UsedCodesModel>(c);
             _dbContext.SaveChangesAsync();

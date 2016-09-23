@@ -151,7 +151,7 @@ namespace Backend_ASPNETCORE_RTM.Models
         public bool CheckUserExistanceFromDB(string loginID)
         {
             int result = 0;
-            using(SqlConnection conn = new SqlConnection("data source = 210.211.71.144; Database = CmnMgt; User ID = CmnMgtDBUser; Password = cmnmgtdbuser12#$;"))
+            using(SqlConnection conn = new SqlConnection("data source = 210.211.71.144; Database = CmnMgt; User ID = cmnmgtdbuser; Password = cmnmgtdbuser12#$;"))
             {
                 using(SqlCommand cmd = new SqlCommand())
                 {

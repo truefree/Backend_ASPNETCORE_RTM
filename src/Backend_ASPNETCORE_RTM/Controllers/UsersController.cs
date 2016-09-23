@@ -35,10 +35,17 @@ namespace Backend_ASPNETCORE_RTM.Controllers
             return _users.GetAllUser();
         }
 
-        //public IActionResult CreateMSProfile()
-        //{
+        [HttpGet("{email}")]
+        public IActionResult GetUserByEmail(string email)
+        {
+            UserModel u = _users.GetUserByLoginID(email);
+            if (u == null)
+            {
+                return NotFound();
+            }
 
-        //}
+            return new ObjectResult(u);
+        }
 
         [HttpGet("{id}", Name = "GetUser")]
         public IActionResult GetUserByID(string id)
@@ -92,12 +99,16 @@ namespace Backend_ASPNETCORE_RTM.Controllers
                 return BadRequest();
             }
 
+#if DEBUG
+#else
             // CmnMgt에 있는지 check...
             if(_users.CheckUserExistanceFromDB(user.loginID) == false)
             {
                 // 없는 user면 404
                 return NotFound();
             }
+#endif
+
 
             // DB에 이미 있으면 Get으로 Redirect
             UserModel u = _users.GetUserByLoginID(user.loginID);
@@ -107,57 +118,89 @@ namespace Backend_ASPNETCORE_RTM.Controllers
                 return RedirectToRoute("GetUser", new { controller = "Users", id = u.internalID });
             }
 
-            user.internalID = Guid.NewGuid();
-            string newUserID = user.internalID.ToString();
-            string secretKey = _totpHelper.GetSecretKey(newUserID);
+            user.internalID = Guid.NewGuid();   
+            //string newUserID = user.internalID.ToString();
+            //string secretKey = _totpHelper.GetSecretKey(newUserID);
+            //if(string.IsNullOrEmpty(secretKey) == true)
+            //{
+            //    secretKey = _totpHelper.GenerateSecretKey();
+            //    _totpHelper.SetSecretKey(newUserID, secretKey);
+            //}
+
+            //string intervalCode = _totpHelper.GetCode(secretKey);
+
+            //// send SMS
+            //try {
+            //    //_totpHelper.RecordSendMessage_SMS("truefree@sk.com", user.loginID, DateTime.Now, "Enter digits below to your app :: " + intervalCode);
+            //} catch(Exception e)
+            //{
+            //    return StatusCode(500);
+            //}
+
+            // 302 Redirect
+            // client에서 SMS key와 함께 다시 POST하기를...
+            //return RedirectToRoute("MFAChallenge", new { controller = "Users", id = user.internalID });
+            return RedirectToRoute("MFARequest", new { controller = "Users", id = user.internalID.ToString(), user = user});
+        }
+
+        [HttpGet("{id}/mfa", Name ="MFARequest")]
+        public async Task<IActionResult> MFARequest(string id, [FromQuery] string loginID)
+        {
+            string secretKey = _totpHelper.GetSecretKey(id);
             if(string.IsNullOrEmpty(secretKey) == true)
             {
                 secretKey = _totpHelper.GenerateSecretKey();
-                _totpHelper.SetSecretKey(newUserID, secretKey);
+                _totpHelper.SetSecretKey(id, secretKey);
             }
 
             string intervalCode = _totpHelper.GetCode(secretKey);
 
             // send SMS
-            try {
-                _totpHelper.RecordSendMessage_SMS("truefree@sk.com", user.loginID, DateTime.Now, "Enter digits below to your app :: " + intervalCode);
-            } catch(Exception e)
+            try
+            {
+#if DEBUG
+                //_totpHelper.RecordSendMessage_SMS("truefree@sk.com", "truefree@sk.com", DateTime.Now, "Enter digits below to your app :: " + intervalCode);
+#else
+                _totpHelper.RecordSendMessage_SMS("truefree@sk.com", loginID, DateTime.Now, "Enter digits below to your app :: " + intervalCode);
+#endif
+            }
+            catch(Exception e)
             {
                 return StatusCode(500);
             }
 
-            // 302 Redirect
-            // client에서 SMS key와 함께 다시 POST하기를...
-            return RedirectToRoute("MFAChallenge", new { controller = "Users", id = user.internalID });
-            
-            //u = await _users.AddUserAsync(user);
-            //return CreatedAtRoute("GetUser", new { controller = "Users", id = u.internalID }, u);
+            return Ok();
         }
 
-        [HttpPost("{id}", Name = "MFAChallenge")]
+        [HttpPost("{id}/mfa", Name = "MFAChallenge")]
         //[ActionName("MFAChallenge")]
-        public async Task<IActionResult> MFAChallange([FromBody] UserModel user, [FromQuery] string code)
+        public async Task<IActionResult> MFAChallange([FromBody] UserModel user, [FromQuery] string code, string id)
         {
             // Request가 잘못 되었으면 400
-            if(user == null || string.IsNullOrEmpty(user.loginID) || string.IsNullOrEmpty(user.internalID.ToString()))
+            Guid g = new Guid();
+            if (string.IsNullOrEmpty(code) || string.IsNullOrWhiteSpace(code) || Guid.TryParse(id, out g) == false
+                || user == null || string.IsNullOrEmpty(user.loginID))
             {
                 return BadRequest();
             }
 
             // DB에 이미 있으면 Get으로 Redirect
-            UserModel u = _users.GetUserByLoginID(user.loginID);
+            UserModel u = _users.GetUserByID(id);
 
             if(u != null)
             {
                 return RedirectToRoute("GetUser", new { controller = "Users", id = u.internalID });
             }
-
+            
             // check code
-            if (_totpHelper.CheckCode(user.internalID.ToString(), code) == false)
+            if (_totpHelper.CheckCode(id, code) == false)
             {
                 // code 안맞으면 401~~~
                 return Unauthorized();
             }
+
+            // MFA 통과 시 GUID 설정
+            user.internalID = new Guid(id);
 
             u = await _users.AddUserAsync(user);
             return CreatedAtRoute("GetUser", new { controller = "Users", id = u.internalID }, u);
@@ -201,7 +244,7 @@ namespace Backend_ASPNETCORE_RTM.Controllers
             return new ObjectResult(u);
         }
 
-        #region Sample generated code
+#region Sample generated code
         //// GET: api/values
         //[HttpGet]
         //public IEnumerable<string> Get()
@@ -233,7 +276,7 @@ namespace Backend_ASPNETCORE_RTM.Controllers
         //public void Delete(int id)
         //{
         //}
-        #endregion
+#endregion
 
     }
 }
