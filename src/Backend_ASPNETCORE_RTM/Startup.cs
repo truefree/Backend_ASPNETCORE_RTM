@@ -56,6 +56,8 @@ namespace Backend_ASPNETCORE_RTM
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<ISpeakerVerificationServiceClient, SpeakerVerificationServiceClient>();
             services.AddSingleton<ITOTPHelper, TOTPHelper>();
+
+            
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -70,8 +72,9 @@ namespace Backend_ASPNETCORE_RTM
                 app.UseDatabaseErrorPage();
                 app.UseBrowserLink();
             }
-
+            app.UseStaticFiles();
             app.UseMvc();
+            
         }
     }
 }

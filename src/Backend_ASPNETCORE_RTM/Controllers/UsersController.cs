@@ -159,7 +159,7 @@ namespace Backend_ASPNETCORE_RTM.Controllers
             try
             {
 #if DEBUG
-                //_totpHelper.RecordSendMessage_SMS("truefree@sk.com", "truefree@sk.com", DateTime.Now, "Enter digits below to your app :: " + intervalCode);
+                _totpHelper.RecordSendMessage_SMS("truefree@sk.com", loginID, DateTime.Now, "Enter digits below to your app :: " + intervalCode);
 #else
                 _totpHelper.RecordSendMessage_SMS("truefree@sk.com", loginID, DateTime.Now, "Enter digits below to your app :: " + intervalCode);
 #endif
@@ -201,6 +201,7 @@ namespace Backend_ASPNETCORE_RTM.Controllers
 
             // MFA 통과 시 GUID 설정
             user.internalID = new Guid(id);
+            user.OTPKey = _totpHelper.GetSecretKey(id.ToString());
 
             u = await _users.AddUserAsync(user);
             return CreatedAtRoute("GetUser", new { controller = "Users", id = u.internalID }, u);

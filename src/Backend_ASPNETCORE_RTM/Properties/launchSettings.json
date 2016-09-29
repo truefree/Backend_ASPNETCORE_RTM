@@ -3,7 +3,7 @@
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
     "iisExpress": {
-      "applicationUrl": "http://localhost:5841/",
+      "applicationUrl": "http://localhost:5845/",
       "sslPort": 0
     }
   },
@@ -19,7 +19,7 @@
     "Backend_ASPNETCORE_RTM": {
       "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": "http://localhost:5000/api/users",
+      "launchUrl": "http://localhost:5845/api/users",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
